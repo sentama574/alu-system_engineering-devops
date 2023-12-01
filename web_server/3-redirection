@@ -1,4 +1,5 @@
-onfigures an Nginx server so that /redirect_me redirects to another page.
+#!/usr/bin/env bash
+# onfigures an Nginx server so that /redirect_me redirects to another page.
 # The redirection is configured as a "301 Moved Permanently"
 
 apt-get update
