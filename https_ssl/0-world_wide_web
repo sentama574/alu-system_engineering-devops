@@ -1,38 +1,42 @@
-#!/usr/bin/env bash
-# Function to perform DNS lookup and use awk for formatting
-perform_dns_lookup() {
-    local domain="$1"
-    local subdomain="$2"
+#!/bin/bash
 
-    # Use dig to perform DNS lookup and format the output using awk
-    dig +short "$subdomain.$domain" | awk -v subdomain="$subdomain" \
-        '{if ($0 == "") print "No record found for " subdomain; else print "The subdomain " subdomain " is a A record and points to " $0}'
+# Function to display subdomain information
+display_info() {
+    sub_domain=$1
+    record_type=$2
+    destination=$3
+
+    echo "The subdomain $sub_domain is a $record_type record and points to $destination"
 }
 
-# Main script
-main() {
-    local domain="$1"
-    local subdomain="$2"
+# Function to query DNS and extract information
+query_dns() {
+    sub_domain=$1
+    domain=$2
 
-    # Default subdomains order
-    subdomains=("www" "lb-01" "web-01" "web-02")
+    result=$(dig +short $sub_domain.$domain)
 
-    if [ -z "$subdomain" ]; then
-        # If no specific subdomain provided, loop through default subdomains
-        for sub in "${subdomains[@]}"; do
-            perform_dns_lookup "$domain" "$sub"
-        done
-    else
-        # If a specific subdomain is provided, perform DNS lookup for that subdomain only
-        perform_dns_lookup "$domain" "$subdomain"
+    if [ -n "$result" ]; then
+        record_type=$(dig $sub_domain.$domain | awk '/ANSWER SECTION:/ {getline; print $4}')
+        destination=$(dig $sub_domain.$domain +short)
+        display_info $sub_domain $record_type $destination
     fi
 }
 
-# Check if required arguments are provided
-if [ "$#" -lt 1 ]; then
-    echo "Usage: $0 <domain> [subdomain]"
-    exit 1
-fi
+# Main script
+domain=$1
+sub_domain=$2
 
-main "$1" "$2"
+# Default subdomains
+subdomains=("www" "lb-01" "web-01" "web-02")
+
+# If sub_domain is provided, display information for the specified subdomain
+if [ -n "$sub_domain" ]; then
+    query_dns $sub_domain $domain
+else
+    # Display information for default subdomains
+    for sub in "${subdomains[@]}"; do
+        query_dns $sub $domain
+    done
+fi
 
