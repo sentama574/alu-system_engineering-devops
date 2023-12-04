@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Function to display subdomain information
+display_info() {
+    sub_domain=$1
+    record_type=$2
+    destination=$3
+
+    echo "The subdomain $sub_domain is a $record_type record and points to $destination"
+}
+
+# Function to query DNS and extract information
+query_dns() {
+    sub_domain=$1
+    domain=$2
+
+    result=$(dig +short $sub_domain.$domain)
+
+    if [ -n "$result" ]; then
+        record_type=$(dig $sub_domain.$domain | awk '/ANSWER SECTION:/ {getline; print $4}')
+        destination=$(dig $sub_domain.$domain +short)
+        display_info $sub_domain $record_type $destination
+    fi
+}
+
+# Main script
+domain=$1
+sub_domain=$2
+
+# Default subdomains
+subdomains=("www" "lb-01" "web-01" "web-02")
+
+# If sub_domain is provided, display information for the specified subdomain
+if [ -n "$sub_domain" ]; then
+    query_dns $sub_domain $domain
+else
+    # Display information for default subdomains
+    for sub in "${subdomains[@]}"; do
+        query_dns $sub $domain
+    done
+fi
+
